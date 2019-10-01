@@ -32,7 +32,7 @@ app.use(cors());
 // app.use("/signup", require("./routes/signup"));
 // app.use("/login", require("./routes/login"));
 app.use("/user", require("./routes/authRoutes"));
-app.use("/chatroom", require("./routes/chatroom"));
+// app.use("/chatroom", require("./routes/chatroom"));
 
 app.get("/protected", verifyToken, (req, res) => {
   res.send(req.user);
