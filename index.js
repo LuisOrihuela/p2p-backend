@@ -5,9 +5,10 @@ require("dotenv/config");
 const mongoose = require("mongoose");
 const logger = require("morgan");
 const bodyParser = require("body-parser");
-const session = require("express-session");
-const MongoStore = require("connect-mongo")(session);
+// const session = require("express-session");
+// const MongoStore = require("connect-mongo")(session);
 const SocketIO = require("socket.io");
+const verifyToken = require("./routes/verifyToken");
 
 mongoose.connect(
   process.env.DB_Connection,
@@ -24,16 +25,17 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 
-app.get("/", (req, res, next) => {
-  res.send("You are in home");
-});
+// app.get("/", (req, res, next) => {
+//   res.send("You are in home");
+// });
 
 // app.use("/signup", require("./routes/signup"));
 // app.use("/login", require("./routes/login"));
-app.use("/", require("./routes/authRoutes"));
+app.use("/user", require("./routes/authRoutes"));
+app.use("/chatroom", require("./routes/chatroom"));
 
-app.get("/secret", (req, res, next) => {
-  res.json("secret page");
+app.get("/protected", verifyToken, (req, res) => {
+  res.send(req.user);
 });
 
 const server = app.listen(process.env.PORT || 4000, () => {
@@ -41,26 +43,40 @@ const server = app.listen(process.env.PORT || 4000, () => {
 });
 
 const io = SocketIO(server);
+let clients = 0;
 
-io.on("connection", socket => {
-  socket.on("NewClient", () => {
+io.on("connection", function(socket) {
+  console.log(socket.id);
+  socket.on("NewClient", function() {
+    console.log("Entró");
     if (clients < 2) {
       if (clients == 1) {
-        io.emit("CreatePeer");
-      } else io.emit("SessionActive");
-      clients++;
-    }
+        console.log("Peer", clients);
+        socket.broadcast.emit("CreatePeer");
+      }
+    } else io.emit("SessionActive");
+    clients++;
+    console.log(clients);
   });
 
-  socket.on("Offer", offer => {
-    socket.broadcast.emit("BackOffer", offer);
-  });
-  socket.on("Answer", data => {
-    socket.broadcast.emit("BackAnswer", data);
-  });
-  socket.on("disconnect", () => {
-    if (clients > 0) {
-      clients--;
-    }
-  });
+  socket.on("Offer", SendOffer);
+  socket.on("Answer", SendAnswer);
+  socket.on("disconnect", Disconnect);
 });
+
+function Disconnect() {
+  if (clients > 0) {
+    clients--;
+    console.log(clients);
+    this.broadcast.emit("RemoveVideo");
+  }
+}
+
+function SendOffer(offer) {
+  console.log("send offer");
+  this.broadcast.emit("BackOffer", offer);
+}
+
+function SendAnswer(data) {
+  this.broadcast.emit("BackAnswer", data);
+}
