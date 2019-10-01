@@ -4,67 +4,48 @@ const bcrypt = require("bcrypt");
 const bcryptSalt = 10;
 const User = require("../models/User");
 
-router.post("/", (req, res, next) => {
-  const email = req.body.email;
-  const password = req.body.password;
-  const username = req.body.username;
+router.post("/register", async (req, res) => {
+  //Validate the data before creating a user
+  const { error } = registerValidation(req.body);
+  if (error) return res.status(400).send(error.details[0].message);
 
-  if (!email || !password) {
-    res.send("Please type email and password");
-    return;
+  //Hash passwords
+  const salt = await bcrypt.genSalt(10);
+  const hashPassword = await bcrypt.hash(req.body.password, salt);
+
+  //Check if user already exists
+  const emailExists = await User.findOne({ email: req.body.email });
+  if (emailExists) return res.status(400).send("Email already exists");
+
+  //Create a new user
+  const user = new User({
+    name: req.body.name,
+    email: req.body.email,
+    password: hashPassword
+  });
+  try {
+    user.save();
+    res.send({ user: user._id });
+  } catch (err) {
+    res.status(400).send(err);
   }
-
-  User.findOne({ email })
-    .then(user => {
-      if (user !== null) {
-        res.json("This email is already associated to an account");
-        return;
-      }
-
-      const salt = bcrypt.genSaltSync(bcryptSalt);
-      const hashPass = bcrypt.hashSync(password, salt);
-
-      const newUser = new User({
-        email,
-        password: hashPass,
-        username
-      });
-
-      newUser.save((err, user) => {
-        if (err) {
-          res.send("Something went wrong");
-        } else {
-          res.send("User saved");
-        }
-      });
-    })
-    .catch(err => next(err));
 });
 
-router.post("/", (req, res, next) => {
-  const { email, password } = req.body;
+//Login
+router.post("/login", async (req, res) => {
+  const { error } = loginValidation(req.body);
+  if (error) return res.status(400).send(error.details[0].message);
 
-  if (!email || !password) {
-    res.json("please enter username and password");
-    return;
-  }
-  User.findOne({ email })
-    .then(user => {
-      if (!user) {
-        res.json("The username doesn't exist");
-        return;
-      }
-      if (bcrypt.compareSync(password, user.password)) {
-        //Save the login in the session!
-        req.session.currenUser = user;
-        res.redirect("/secret");
-      } else {
-        res.json("Incorrect password");
-      }
-    })
-    .catch(error => {
-      next(error);
-    });
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) return res.status(400).send("User doesn't exist");
+
+  //Password is correct?
+  const validPassword = await bcrypt.compare(req.body.password, user.password);
+  if (!validPassword) return res.status(400).send("Incorrect password");
+
+  //Create and assign a token
+  const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET);
+  res.header("auth-token", token).send(token);
 });
 
 module.exports = router;
