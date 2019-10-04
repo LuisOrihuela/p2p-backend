@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const bcryptSalt = 10;
 const User = require("../models/User");
+const Chatroom = require("../models/Chatrooms");
 const jwt = require("jsonwebtoken");
 const { registerValidation, loginValidation } = require("./validation");
 
@@ -27,7 +28,9 @@ router.post("/signup", async (req, res) => {
   });
   try {
     user.save();
-    res.send({ user: user._id });
+    //Create and assign a token
+    const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET);
+    res.header("auth-token", token).send(token);
   } catch (err) {
     res.status(400).send(err);
   }
@@ -50,4 +53,32 @@ router.post("/login", async (req, res) => {
   res.header("auth-token", token).send(token);
 });
 
+router.post("/dashboard", async (req, res) => {
+  let { id, level, subject } = req.body;
+  let creatorId = id;
+  const user = await User.findById({ _id: id });
+  const creator = user.username;
+  console.log(creator);
+  const chatroom = new Chatroom({ creator, level, subject, creatorId });
+
+  try {
+    await chatroom.save();
+    res.send(chatroom);
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
+
+router.get("/dashboard", async (req, res) => {
+  const chatrooms = await Chatroom.find({});
+  if (chatrooms === 0) {
+    res.status(400).send("No chatrooms available");
+  }
+
+  try {
+    res.send(chatrooms);
+  } catch (err) {
+    res.status(400).send(err);
+  }
+});
 module.exports = router;

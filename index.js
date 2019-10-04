@@ -5,8 +5,6 @@ require("dotenv/config");
 const mongoose = require("mongoose");
 const logger = require("morgan");
 const bodyParser = require("body-parser");
-// const session = require("express-session");
-// const MongoStore = require("connect-mongo")(session);
 const SocketIO = require("socket.io");
 const verifyToken = require("./routes/verifyToken");
 
@@ -41,12 +39,12 @@ app.get("/protected", verifyToken, (req, res) => {
 const server = app.listen(process.env.PORT || 4000, () => {
   console.log(`Listening on port ${process.env.PORT}`);
 });
-
 const io = SocketIO(server);
 let clients = 0;
+let socket = 0;
 
 io.on("connection", function(socket) {
-  console.log(socket.id);
+  console.log("Socket: " + socket.id);
   socket.on("NewClient", function() {
     console.log("Entró");
     if (clients < 2) {
