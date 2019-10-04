@@ -41,20 +41,21 @@ const server = app.listen(process.env.PORT || 4000, () => {
 });
 const io = SocketIO(server);
 let clients = 0;
-let socket = 0;
+let initiatorPath = "";
 
 io.on("connection", function(socket) {
-  console.log("Socket: " + socket.id);
+  // console.log("Socket: " + socket.id);
   socket.on("NewClient", function() {
-    console.log("Entró");
+    console.log("Entró: ", clients);
+
     if (clients < 2) {
       if (clients == 1) {
         console.log("Peer", clients);
+        // initiatorPath = path;
         socket.broadcast.emit("CreatePeer");
       }
     } else io.emit("SessionActive");
     clients++;
-    console.log(clients);
   });
 
   socket.on("Offer", SendOffer);
