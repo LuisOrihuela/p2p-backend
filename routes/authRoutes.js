@@ -70,7 +70,7 @@ router.post("/dashboard", async (req, res) => {
 });
 
 router.get("/dashboard", async (req, res) => {
-  const chatrooms = await Chatroom.find({});
+  let chatrooms = await Chatroom.find();
   if (chatrooms === 0) {
     res.status(400).send("No chatrooms available");
   }
