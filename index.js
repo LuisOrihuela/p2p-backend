@@ -7,7 +7,6 @@ const logger = require("morgan");
 const bodyParser = require("body-parser");
 const SocketIO = require("socket.io");
 const verifyToken = require("./routes/verifyToken");
-const Chatrooms = require("./models/Chatrooms");
 
 mongoose.connect(
   process.env.DB_Connection,
@@ -35,26 +34,23 @@ const server = app.listen(process.env.PORT || 4000, () => {
 });
 const io = SocketIO(server);
 let clients = 0;
-const nsp = io.of("/dashboard");
-
-nsp.on("connection", socket => {
-  socket.on("test", data => {
-    console.log(data);
-  });
-});
 
 io.on("connection", function(socket) {
-  socket.on("NewClient", function() {
-    console.log("Entró: ", clients);
+  socket.on("NewClient", function(data) {
+    // socket.join(data);
+    // socket.room = data;
+    // console.log("Entró: ", clients);
 
     if (clients < 2) {
       if (clients == 1) {
         console.log("Peer", clients);
         // initiatorPath = path;
         socket.broadcast.emit("CreatePeer");
+        // clients++;
       }
     } else {
       // io.emit("SessionActive");
+
       return;
     }
     clients++;
