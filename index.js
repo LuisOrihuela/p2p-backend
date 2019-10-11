@@ -35,22 +35,19 @@ const server = app.listen(process.env.PORT || 4000, () => {
 const io = SocketIO(server);
 let clients = 0;
 
-io.on("connection", function(socket) {
+io.of("/chatroom").on("connection", function(socket) {
   socket.on("NewClient", function(data) {
-    // socket.join(data);
-    // socket.room = data;
-    // console.log("Entró: ", clients);
-
+    // console.log(id);
+    socket.join(1);
+    socket.room = 1;
+    // console.log(io.of("/").in().adapter.rooms);
+    // console.log(io.nsps["/"].adapter.rooms);
     if (clients < 2) {
       if (clients == 1) {
-        console.log("Peer", clients);
-        // initiatorPath = path;
         socket.broadcast.emit("CreatePeer");
-        // clients++;
       }
     } else {
       // io.emit("SessionActive");
-
       return;
     }
     clients++;
@@ -59,19 +56,11 @@ io.on("connection", function(socket) {
   socket.on("Offer", SendOffer);
   socket.on("Answer", SendAnswer);
   socket.on("disconnect", Disconnect);
-
-  socket.on("chatrooms updated", data => {
-    // console.log("triggered: ", data);
-    socket.broadcast.emit("getChatrooms", data);
-  });
-
-  // if (clients > 2) clients = 0;
 });
 
 function Disconnect() {
   if (clients > 0) {
     clients--;
-    // console.log(clients);
     this.broadcast.emit("RemoveVideo");
   }
 }
@@ -84,3 +73,13 @@ function SendOffer(offer) {
 function SendAnswer(data) {
   this.broadcast.emit("BackAnswer", data);
 }
+
+io.of("/dashboard").on("connection", socket => {
+  socket.on("test", data => {
+    console.log(data);
+  });
+
+  socket.on("chatrooms updated", data => {
+    socket.broadcast.emit("getChatrooms", data);
+  });
+});

@@ -57,7 +57,7 @@ router.post("/dashboard", async (req, res) => {
   let { id, level, subject } = req.body;
   let creatorId = id;
   const user = await User.findById({ _id: id });
-  const creator = user.username;
+  const creator = user.name;
   console.log(creator);
   const chatroom = new Chatroom({ creator, level, subject, creatorId });
 
@@ -79,6 +79,17 @@ router.get("/dashboard", async (req, res) => {
     res.send(chatrooms);
   } catch (err) {
     res.status(400).send(err);
+  }
+});
+
+router.get("/:id", async (req, res) => {
+  let userid = req.params.id;
+  let user = await User.findById({ _id: userid });
+  console.log(user);
+  try {
+    res.send(user.name);
+  } catch (err) {
+    res.send(err);
   }
 });
 module.exports = router;
